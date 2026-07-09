@@ -53,3 +53,9 @@ Formato: `## YYYY-MM-DD — Tipo` seguito da sezioni Aggiunto / Modificato / Fix
 ### Modificato
 - Schema dati (`storage.js`) esteso a `version: 2`: categorie con `budget` opzionale, movimenti con `recurringId` (per collegarli al ricorrente che li ha generati), nuova collezione `recurring`. I dati esistenti restano validi, i campi mancanti vengono aggiunti in lettura senza migrazione distruttiva.
 - Bump `CACHE_NAME` a `spicciolo-v5` in `sw.js` per forzare l'aggiornamento della cache offline con gli asset corretti.
+
+## 2026-07-10 — Fix (campo data ancora sovradimensionato su iOS)
+
+### Fix
+- Il fix precedente (`min-width: 0` su `.modal-form input`) non era sufficiente su iOS Safari: il controllo nativo `input[type="date"]` mantiene una larghezza intrinseca propria che ignora `width: 100%` anche con `min-width: 0`, per cui l'intero box (sfondo e bordi arrotondati inclusi, non solo il testo) risultava più largo degli altri campi e veniva tagliato dal bordo destro dello schermo. Aggiunta la regola dedicata `.modal-form input[type="date"] { width: 1px; min-width: 100%; }`: forzando un `width` esplicito più piccolo del `min-width`, il browser è costretto a usare `min-width: 100%` come larghezza effettiva, bypassando la larghezza intrinseca del controllo.
+- Bump `CACHE_NAME` a `spicciolo-v6` in `sw.js` per forzare l'aggiornamento della cache offline con gli asset corretti.

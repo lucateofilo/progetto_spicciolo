@@ -744,6 +744,11 @@ main {
   height: 42px;
 }
 
+.modal-form input[type="date"] {
+  width: 1px;
+  min-width: 100%;
+}
+
 .modal-form input[type="checkbox"] {
   display: inline;
   width: auto;
