@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>Spicciolo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div id="app">
+  <header class="topbar">
+    <h1>Spicciolo</h1>
+    <div class="period-filter">
+      <select id="periodType">
+        <option value="day">Giorno</option>
+        <option value="week">Settimana</option>
+        <option value="month" selected>Mese</option>
+        <option value="year">Anno</option>
+      </select>
+      <div class="period-nav">
+        <button id="periodPrev" aria-label="Periodo precedente">&#8249;</button>
+        <span id="periodLabel"></span>
+        <button id="periodNext" aria-label="Periodo successivo">&#8250;</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="view-home" class="view active">
+      <div class="totals-row">
+        <div class="total-card entrata">
+          <span class="label">Entrate</span>
+          <span class="value" id="totalEntrate">0,00 &euro;</span>
+        </div>
+        <div class="total-card uscita">
+          <span class="label">Uscite</span>
+          <span class="value" id="totalUscite">0,00 &euro;</span>
+        </div>
+        <div class="total-card saldo">
+          <span class="label">Saldo</span>
+          <span class="value" id="totalSaldo">0,00 &euro;</span>
+        </div>
+      </div>
+
+      <ul id="movementsList" class="movements-list"></ul>
+      <p id="emptyState" class="empty-state" hidden>Nessun movimento in questo periodo.<br>Tocca + per aggiungerne uno.</p>
+    </section>
+
+    <section id="view-stats" class="view">
+      <div class="chart-card">
+        <h2>Entrate vs Uscite</h2>
+        <div id="stackedBar" class="stacked-bar"></div>
+        <ul id="stackedLegend" class="stacked-legend"></ul>
+      </div>
+
+      <div class="chart-card">
+        <div class="totals-header">
+          <h2>Totale per categoria</h2>
+          <div class="toggle-type">
+            <button class="toggle-btn active" data-type="uscita">Uscite</button>
+            <button class="toggle-btn" data-type="entrata">Entrate</button>
+          </div>
+        </div>
+        <ul id="categoryTotals" class="category-totals"></ul>
+        <p id="categoryEmptyState" class="empty-state" hidden>Nessuna categoria in questo periodo.</p>
+      </div>
+
+      <div class="chart-card">
+        <h2>Gestisci categorie</h2>
+        <ul id="categoryManager" class="category-manager"></ul>
+        <p id="categoryManagerEmpty" class="empty-state" hidden>Nessuna categoria creata.</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-view="home">
+      <span class="icon">&#8962;</span><span>Home</span>
+    </button>
+    <button class="nav-btn" data-view="stats">
+      <span class="icon">&#128202;</span><span>Statistiche</span>
+    </button>
+  </nav>
+
+  <button id="fab" class="fab" aria-label="Aggiungi movimento">+</button>
+</div>
+
+<div id="movementModal" class="modal" hidden>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle">Nuovo movimento</h2>
+      <button id="closeModal" class="icon-btn" aria-label="Chiudi">&#10005;</button>
+    </div>
+
+    <form id="movementForm">
+      <input type="hidden" id="movementId">
+
+      <div class="type-switch">
+        <button type="button" class="type-btn entrata" data-type="entrata">Entrata</button>
+        <button type="button" class="type-btn uscita active" data-type="uscita">Uscita</button>
+      </div>
+
+      <label>
+        Importo
+        <input type="number" id="amount" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00" required>
+      </label>
+
+      <label>
+        Data
+        <input type="date" id="date" required>
+      </label>
+
+      <label>
+        Categoria
+        <select id="categorySelect" required>
+          <option value="__new__">+ Nuova categoria</option>
+        </select>
+      </label>
+
+      <div id="newCategoryFields" class="new-category-fields" hidden>
+        <label>
+          Nome categoria
+          <input type="text" id="newCategoryName" maxlength="30" placeholder="Es. Spesa">
+        </label>
+        <label class="color-label">
+          Colore
+          <input type="color" id="newCategoryColor" value="#3b82f6">
+        </label>
+      </div>
+
+      <label>
+        Nota (opzionale)
+        <input type="text" id="note" maxlength="80" placeholder="Es. supermercato">
+      </label>
+
+      <div class="modal-actions">
+        <button type="button" id="deleteMovement" class="btn danger" hidden>Elimina</button>
+        <button type="submit" class="btn primary">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/charts.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
