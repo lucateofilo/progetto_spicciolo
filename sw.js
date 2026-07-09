@@ -1,4 +1,4 @@
-const CACHE_NAME = "spicciolo-v2";
+const CACHE_NAME = "spicciolo-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
