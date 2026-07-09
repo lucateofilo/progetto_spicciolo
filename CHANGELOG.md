@@ -14,3 +14,9 @@ Formato: `## YYYY-MM-DD — Tipo` seguito da sezioni Aggiunto / Modificato / Fix
 - Gestione categorie: eliminazione consentita solo se la categoria non ha movimenti collegati.
 - PWA installabile (`manifest.json` + `sw.js`, cache offline dell'app shell).
 - Storage 100% locale (`localStorage`), nessun backend.
+
+## 2026-07-09 — Fix (modale sempre visibile)
+
+### Fix
+- `[hidden] { display: none !important; }` in `style.css`: `.modal` e `.new-category-fields` impostavano `display: flex` con la stessa specificità dell'attributo `hidden`, che quindi veniva ignorato — il modale di aggiunta movimento restava sempre aperto e bloccava l'app, "Salva" sembrava non funzionare (il campo data non era inizializzato e la validazione nativa bloccava l'invio) e "Annulla" (X) non chiudeva nulla.
+- Bump `CACHE_NAME` a `spicciolo-v2` in `sw.js` per forzare l'aggiornamento della cache offline con gli asset corretti.
