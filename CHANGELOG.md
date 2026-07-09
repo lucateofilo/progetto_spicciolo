@@ -35,3 +35,21 @@ Formato: `## YYYY-MM-DD — Tipo` seguito da sezioni Aggiunto / Modificato / Fix
 
 ### Modificato
 - Bump `CACHE_NAME` a `spicciolo-v4` in `sw.js` per forzare l'aggiornamento della cache offline con gli asset corretti.
+
+## 2026-07-10 — Feature (gestione, statistiche avanzate, ricorrenti)
+
+### Aggiunto
+- Nuova terza tab "Gestione" nella bottom-nav (icona ingranaggio SVG), per non affollare ulteriormente Statistiche.
+- **Modifica categoria**: nome e colore di una categoria esistente sono ora modificabili (icona matita in Gestione), oltre alla creazione ed eliminazione già presenti.
+- **Budget mensile per categoria**: campo opzionale (si applica sia a categorie di Entrata che di Uscita); in Statistiche, quando il periodo è "Mese", sotto ogni categoria con budget impostato compare una seconda barra di avanzamento (colore neutro/arancio/rosso per le uscite oltre l'80%/100% del budget, verde per le entrate al raggiungimento dell'obiettivo).
+- **Riordino categorie**: frecce su/giù in Gestione per riordinare manualmente la lista delle categorie (l'ordine è quello mostrato ovunque nell'app).
+- **Movimenti ricorrenti**: nuova sezione in Gestione per definire movimenti che si ripetono ogni mese (es. affitto, stipendio, abbonamenti) con importo, categoria, giorno del mese e stato attivo/in pausa. All'apertura dell'app, i movimenti dovuti vengono generati automaticamente e silenziosamente (anche recuperando i mesi mancati se l'app non viene aperta per un po').
+- **Esporta CSV**: in Gestione, bottone per scaricare tutti i movimenti in un file CSV (data, tipo, categoria, importo, nota), apribile in Excel/Fogli Google.
+- **Andamento**: nuovo grafico a barre in Statistiche con il saldo netto degli ultimi 6 periodi (in base al filtro Giorno/Settimana/Mese/Anno selezionato).
+- **Confronto con il periodo precedente**: nuova card in Statistiche con entrate/uscite/saldo del periodo corrente a confronto con quello precedente, con variazione percentuale.
+- **Ricerca movimenti**: campo di ricerca in Home per filtrare i movimenti del periodo per nota o nome categoria.
+- **Media periodo**: sotto i totali in Home, media giornaliera (Settimana/Mese) o mensile (Anno) delle uscite del periodo selezionato.
+
+### Modificato
+- Schema dati (`storage.js`) esteso a `version: 2`: categorie con `budget` opzionale, movimenti con `recurringId` (per collegarli al ricorrente che li ha generati), nuova collezione `recurring`. I dati esistenti restano validi, i campi mancanti vengono aggiunti in lettura senza migrazione distruttiva.
+- Bump `CACHE_NAME` a `spicciolo-v5` in `sw.js` per forzare l'aggiornamento della cache offline con gli asset corretti.

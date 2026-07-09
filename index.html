@@ -45,12 +45,25 @@
           <span class="value" id="totalSaldo">0,00 &euro;</span>
         </div>
       </div>
+      <p id="periodAverage" class="period-average" hidden></p>
+
+      <input type="search" id="searchMovements" class="search-input" placeholder="Cerca per nota o categoria">
 
       <ul id="movementsList" class="movements-list"></ul>
       <p id="emptyState" class="empty-state" hidden>Nessun movimento in questo periodo.<br>Tocca + per aggiungerne uno.</p>
     </section>
 
     <section id="view-stats" class="view">
+      <div class="chart-card">
+        <h2>Andamento</h2>
+        <div id="trendChart" class="trend-chart"></div>
+      </div>
+
+      <div class="chart-card">
+        <h2>Confronto con il periodo precedente</h2>
+        <div id="periodComparison" class="comparison-list"></div>
+      </div>
+
       <div class="chart-card">
         <h2>Entrate vs Uscite</h2>
         <div id="stackedBar" class="stacked-bar"></div>
@@ -68,11 +81,31 @@
         <ul id="categoryTotals" class="category-totals"></ul>
         <p id="categoryEmptyState" class="empty-state" hidden>Nessuna categoria in questo periodo.</p>
       </div>
+    </section>
 
+    <section id="view-manage" class="view">
       <div class="chart-card">
-        <h2>Gestisci categorie</h2>
+        <div class="totals-header">
+          <h2>Gestisci categorie</h2>
+          <button type="button" id="addCategoryBtn" class="icon-btn" aria-label="Nuova categoria">+</button>
+        </div>
         <ul id="categoryManager" class="category-manager"></ul>
         <p id="categoryManagerEmpty" class="empty-state" hidden>Nessuna categoria creata.</p>
+      </div>
+
+      <div class="chart-card">
+        <div class="totals-header">
+          <h2>Movimenti ricorrenti</h2>
+          <button type="button" id="addRecurringBtn" class="icon-btn" aria-label="Nuovo ricorrente">+</button>
+        </div>
+        <ul id="recurringList" class="movements-list"></ul>
+        <p id="recurringEmpty" class="empty-state" hidden>Nessun movimento ricorrente.<br>Utile per affitto, stipendio, abbonamenti.</p>
+      </div>
+
+      <div class="chart-card">
+        <h2>Esporta dati</h2>
+        <p class="export-hint">Scarica tutti i movimenti in un file CSV, apribile con Excel o Fogli Google.</p>
+        <button type="button" id="exportCsvBtn" class="btn primary">Esporta CSV</button>
       </div>
     </section>
   </main>
@@ -83,6 +116,9 @@
     </button>
     <button class="nav-btn" data-view="stats">
       <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="20" x2="4" y2="12"></line><line x1="12" y1="20" x2="12" y2="6"></line><line x1="20" y1="20" x2="20" y2="15"></line></svg></span><span>Statistiche</span>
+    </button>
+    <button class="nav-btn" data-view="manage">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></span><span>Gestione</span>
     </button>
   </nav>
 
@@ -96,7 +132,7 @@
       <button id="closeModal" class="icon-btn" aria-label="Chiudi">&#10005;</button>
     </div>
 
-    <form id="movementForm">
+    <form id="movementForm" class="modal-form">
       <input type="hidden" id="movementId">
 
       <div class="type-switch">
@@ -139,6 +175,88 @@
 
       <div class="modal-actions">
         <button type="button" id="deleteMovement" class="btn danger" hidden>Elimina</button>
+        <button type="submit" class="btn primary">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="categoryModal" class="modal" hidden>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="categoryModalTitle">Nuova categoria</h2>
+      <button id="closeCategoryModal" class="icon-btn" aria-label="Chiudi">&#10005;</button>
+    </div>
+
+    <form id="categoryForm" class="modal-form">
+      <input type="hidden" id="categoryId">
+
+      <label>
+        Nome
+        <input type="text" id="categoryName" maxlength="30" placeholder="Es. Spesa" required>
+      </label>
+
+      <div class="field-row">
+        <label class="color-label">
+          Colore
+          <input type="color" id="categoryColor" value="#3b82f6">
+        </label>
+        <label class="budget-field">
+          Budget mensile (opzionale)
+          <input type="number" id="categoryBudget" inputmode="decimal" step="0.01" min="0" placeholder="Es. 300">
+        </label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" id="deleteCategoryBtn" class="btn danger" hidden>Elimina</button>
+        <button type="submit" class="btn primary">Salva</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="recurringModal" class="modal" hidden>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="recurringModalTitle">Nuovo ricorrente</h2>
+      <button id="closeRecurringModal" class="icon-btn" aria-label="Chiudi">&#10005;</button>
+    </div>
+
+    <form id="recurringForm" class="modal-form">
+      <input type="hidden" id="recurringId">
+
+      <div class="type-switch">
+        <button type="button" class="type-btn entrata" data-type="entrata">Entrata</button>
+        <button type="button" class="type-btn uscita active" data-type="uscita">Uscita</button>
+      </div>
+
+      <label>
+        Importo
+        <input type="number" id="recurringAmount" inputmode="decimal" step="0.01" min="0.01" placeholder="0,00" required>
+      </label>
+
+      <label>
+        Categoria
+        <select id="recurringCategorySelect" required></select>
+      </label>
+
+      <label>
+        Giorno del mese
+        <input type="number" id="recurringDay" min="1" max="31" step="1" placeholder="Es. 27" required>
+      </label>
+
+      <label>
+        Nota (opzionale)
+        <input type="text" id="recurringNote" maxlength="80" placeholder="Es. Abbonamento">
+      </label>
+
+      <label class="checkbox-label">
+        <input type="checkbox" id="recurringActive" checked>
+        Attivo
+      </label>
+
+      <div class="modal-actions">
+        <button type="button" id="deleteRecurringBtn" class="btn danger" hidden>Elimina</button>
         <button type="submit" class="btn primary">Salva</button>
       </div>
     </form>
