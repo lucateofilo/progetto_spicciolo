@@ -425,6 +425,14 @@ main {
   font-size: 14px;
   padding: 6px;
   border-radius: 8px;
+  display: flex;
+  align-items: center;
+}
+
+.category-manager .cat-delete svg {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 .category-manager .cat-delete:disabled {
@@ -461,6 +469,12 @@ main {
 
 .nav-btn .icon {
   font-size: 18px;
+}
+
+.nav-btn .icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 
 .nav-btn.active {
@@ -502,6 +516,7 @@ main {
   padding: 16px;
   max-height: 90vh;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .modal-header {
@@ -537,6 +552,7 @@ main {
 #movementForm select {
   display: block;
   width: 100%;
+  min-width: 0;
   margin-top: 4px;
   padding: 10px 12px;
   border: 1px solid var(--border);
