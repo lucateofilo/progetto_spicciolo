@@ -31,7 +31,7 @@ function startOfWeek(date) {
 }
 
 function toISODate(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return date.toLocaleDateString("en-CA");
 }
 
 function getPeriodBounds(type, anchor) {
@@ -246,8 +246,7 @@ function renderMovementsList(movements, categories) {
   }
 }
 
-function populateCategorySelect(selectedId) {
-  const select = document.getElementById("categorySelect");
+function fillCategorySelect(select, selectedId, includeNewOption) {
   const categories = Store.getCategories();
   select.innerHTML = "";
   for (const c of categories) {
@@ -256,26 +255,24 @@ function populateCategorySelect(selectedId) {
     opt.textContent = c.name;
     select.appendChild(opt);
   }
-  const newOpt = document.createElement("option");
-  newOpt.value = "__new__";
-  newOpt.textContent = "+ Nuova categoria";
-  select.appendChild(newOpt);
+  if (includeNewOption) {
+    const newOpt = document.createElement("option");
+    newOpt.value = "__new__";
+    newOpt.textContent = "+ Nuova categoria";
+    select.appendChild(newOpt);
+  }
+  select.value = selectedId && categories.some((c) => c.id === selectedId)
+    ? selectedId
+    : categories[0] ? categories[0].id : includeNewOption ? "__new__" : "";
+}
 
-  select.value = selectedId && categories.some((c) => c.id === selectedId) ? selectedId : categories[0] ? categories[0].id : "__new__";
+function populateCategorySelect(selectedId) {
+  fillCategorySelect(document.getElementById("categorySelect"), selectedId, true);
   toggleNewCategoryFields();
 }
 
 function populateRecurringCategorySelect(selectedId) {
-  const select = document.getElementById("recurringCategorySelect");
-  const categories = Store.getCategories();
-  select.innerHTML = "";
-  for (const c of categories) {
-    const opt = document.createElement("option");
-    opt.value = c.id;
-    opt.textContent = c.name;
-    select.appendChild(opt);
-  }
-  select.value = selectedId && categories.some((c) => c.id === selectedId) ? selectedId : categories[0] ? categories[0].id : "";
+  fillCategorySelect(document.getElementById("recurringCategorySelect"), selectedId, false);
 }
 
 function toggleNewCategoryFields() {

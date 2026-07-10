@@ -3,7 +3,7 @@ const STORAGE_KEY = "spicciolo_data";
 function loadData() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) {
-    return { version: 2, categories: [], movements: [], recurring: [] };
+    return { categories: [], movements: [], recurring: [] };
   }
   try {
     const data = JSON.parse(raw);
@@ -16,10 +16,9 @@ function loadData() {
     for (const m of data.movements) {
       if (m.recurringId === undefined) m.recurringId = null;
     }
-    data.version = 2;
     return data;
   } catch {
-    return { version: 2, categories: [], movements: [], recurring: [] };
+    return { categories: [], movements: [], recurring: [] };
   }
 }
 
@@ -28,7 +27,14 @@ function saveData(data) {
 }
 
 function genId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  return crypto.randomUUID();
+}
+
+function updateEntity(list, id, changes) {
+  const item = list.find((x) => x.id === id);
+  if (!item) return null;
+  Object.assign(item, changes);
+  return item;
 }
 
 function ymKey(date) {
@@ -60,9 +66,8 @@ const Store = {
 
   updateCategory(id, changes) {
     const data = loadData();
-    const category = data.categories.find((c) => c.id === id);
+    const category = updateEntity(data.categories, id, changes);
     if (!category) return null;
-    Object.assign(category, changes);
     if (changes.budget !== undefined) {
       category.budget = changes.budget === null || changes.budget === "" ? null : Math.abs(Number(changes.budget));
     }
@@ -113,9 +118,8 @@ const Store = {
 
   updateMovement(id, changes) {
     const data = loadData();
-    const movement = data.movements.find((m) => m.id === id);
+    const movement = updateEntity(data.movements, id, changes);
     if (!movement) return null;
-    Object.assign(movement, changes);
     if (changes.amount !== undefined) {
       movement.amount = Math.abs(Number(changes.amount));
     }
@@ -156,9 +160,8 @@ const Store = {
 
   updateRecurring(id, changes) {
     const data = loadData();
-    const recurring = data.recurring.find((r) => r.id === id);
+    const recurring = updateEntity(data.recurring, id, changes);
     if (!recurring) return null;
-    Object.assign(recurring, changes);
     if (changes.amount !== undefined) recurring.amount = Math.abs(Number(changes.amount));
     if (changes.dayOfMonth !== undefined) recurring.dayOfMonth = Math.min(31, Math.max(1, Number(changes.dayOfMonth)));
     saveData(data);

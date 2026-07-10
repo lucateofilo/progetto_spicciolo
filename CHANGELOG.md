@@ -59,3 +59,13 @@ Formato: `## YYYY-MM-DD — Tipo` seguito da sezioni Aggiunto / Modificato / Fix
 ### Fix
 - Il fix precedente (`min-width: 0` su `.modal-form input`) non era sufficiente su iOS Safari: il controllo nativo `input[type="date"]` mantiene una larghezza intrinseca propria che ignora `width: 100%` anche con `min-width: 0`, per cui l'intero box (sfondo e bordi arrotondati inclusi, non solo il testo) risultava più largo degli altri campi e veniva tagliato dal bordo destro dello schermo. Aggiunta la regola dedicata `.modal-form input[type="date"] { width: 1px; min-width: 100%; }`: forzando un `width` esplicito più piccolo del `min-width`, il browser è costretto a usare `min-width: 100%` come larghezza effettiva, bypassando la larghezza intrinseca del controllo.
 - Bump `CACHE_NAME` a `spicciolo-v6` in `sw.js` per forzare l'aggiornamento della cache offline con gli asset corretti.
+
+## 2026-07-10 — Refactor (pulizia ponytail)
+
+### Modificato
+- `genId()` in `storage.js` usava `Date.now().toString(36) + Math.random().toString(36)` per generare ID: sostituito con `crypto.randomUUID()`, nativo nei browser moderni (l'app richiede già HTTPS/localhost per la PWA).
+- `toISODate()` in `app.js` costruiva la stringa `YYYY-MM-DD` a mano: sostituito con `date.toLocaleDateString("en-CA")`, che restituisce lo stesso formato nativamente in ora locale.
+- `updateCategory`, `updateMovement`, `updateRecurring` in `storage.js` ripetevano lo stesso pattern find-by-id + `Object.assign` + save: estratto in un helper condiviso `updateEntity()`.
+- `populateCategorySelect` e `populateRecurringCategorySelect` in `app.js` duplicavano lo stesso loop di costruzione delle `<option>`: unificate in `fillCategorySelect()` con un flag per l'opzione "+ Nuova categoria".
+- Rimosso il campo `version` da `loadData()`/`saveData()`: veniva scritto a ogni salvataggio ma non era mai letto per ramificare una migrazione, quindi era morto.
+- Bump `CACHE_NAME` a `spicciolo-v7` in `sw.js` per forzare l'aggiornamento della cache offline con gli asset corretti.
