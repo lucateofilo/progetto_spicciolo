@@ -461,6 +461,34 @@ main {
   background: var(--color-uscita);
 }
 
+/* Category donut */
+.category-donut {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.category-donut::after {
+  content: "";
+  position: absolute;
+  inset: 22px;
+  border-radius: 50%;
+  background: var(--surface-1);
+}
+
+.donut-total {
+  position: relative;
+  z-index: 1;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 /* Category totals with bars */
 .category-totals {
   list-style: none;

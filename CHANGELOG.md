@@ -3,6 +3,11 @@
 Tutte le modifiche significative al progetto sono documentate in questo file.
 Formato: `## YYYY-MM-DD — Tipo` seguito da sezioni Aggiunto / Modificato / Fix.
 
+## 2026-07-10 — Feature (donut categorie)
+
+### Aggiunto
+- **Donut categorie**: in Statistiche, sopra la lista "Totale per categoria", un grafico a ciambella con `conic-gradient` CSS nativo (nessuna libreria di grafici) mostra la ripartizione percentuale delle categorie per il tipo selezionato (Uscite/Entrate), con il totale del periodo al centro.
+
 ## 2026-07-09 — Init
 
 ### Aggiunto

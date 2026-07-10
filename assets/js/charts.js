@@ -41,6 +41,29 @@ function renderStackedBar(movements) {
   `;
 }
 
+function renderCategoryDonut(rows) {
+  const donut = document.getElementById("categoryDonut");
+  const totalLabel = document.getElementById("categoryDonutTotal");
+  const total = rows.reduce((s, r) => s + r.amount, 0);
+
+  if (rows.length === 0 || total === 0) {
+    donut.hidden = true;
+    return;
+  }
+  donut.hidden = false;
+
+  let acc = 0;
+  const stops = rows.map((row) => {
+    const start = (acc / total) * 100;
+    acc += row.amount;
+    const end = (acc / total) * 100;
+    return `${row.color} ${start}% ${end}%`;
+  });
+
+  donut.style.background = `conic-gradient(${stops.join(", ")})`;
+  totalLabel.textContent = formatEuro(total);
+}
+
 function renderCategoryTotals(movements, categories, type, periodType) {
   const list = document.getElementById("categoryTotals");
   const emptyState = document.getElementById("categoryEmptyState");
@@ -63,6 +86,8 @@ function renderCategoryTotals(movements, categories, type, periodType) {
       };
     })
     .sort((a, b) => b.amount - a.amount);
+
+  renderCategoryDonut(rows);
 
   if (rows.length === 0) {
     emptyState.hidden = false;
