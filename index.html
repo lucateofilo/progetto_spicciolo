@@ -46,8 +46,14 @@
         </div>
       </div>
       <p id="periodAverage" class="period-average" hidden></p>
+      <div id="budgetWarnings" class="budget-warnings" hidden></div>
 
-      <input type="search" id="searchMovements" class="search-input" placeholder="Cerca per nota o categoria">
+      <div class="filter-row">
+        <input type="search" id="searchMovements" class="search-input" placeholder="Cerca per nota o categoria">
+        <select id="filterCategory" class="filter-select">
+          <option value="">Tutte le categorie</option>
+        </select>
+      </div>
 
       <ul id="movementsList" class="movements-list"></ul>
       <p id="emptyState" class="empty-state" hidden>Nessun movimento in questo periodo.<br>Tocca + per aggiungerne uno.</p>
@@ -108,6 +114,16 @@
         <p class="export-hint">Scarica tutti i movimenti in un file CSV, apribile con Excel o Fogli Google.</p>
         <button type="button" id="exportCsvBtn" class="btn primary">Esporta CSV</button>
       </div>
+
+      <div class="chart-card">
+        <h2>Backup dati</h2>
+        <p class="export-hint">Salva o ripristina categorie, movimenti, ricorrenti e budget in un file. Le foto degli scontrini non sono incluse nel backup.</p>
+        <div class="backup-actions">
+          <button type="button" id="exportBackupBtn" class="btn primary">Esporta backup</button>
+          <label for="importBackupInput" class="btn secondary">Ripristina backup</label>
+        </div>
+        <input type="file" id="importBackupInput" accept="application/json,.json" hidden>
+      </div>
     </section>
   </main>
 
@@ -124,6 +140,10 @@
   </nav>
 
   <button id="fab" class="fab" aria-label="Aggiungi movimento">+</button>
+  <label for="quickReceiptInput" id="fabPhoto" class="fab fab-secondary" aria-label="Scontrino veloce">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+  </label>
+  <input type="file" id="quickReceiptInput" accept="image/*" capture="environment" hidden>
 </div>
 
 <div id="movementModal" class="modal" hidden>
@@ -174,8 +194,19 @@
         <input type="text" id="note" maxlength="80" placeholder="Es. supermercato">
       </label>
 
+      <div class="receipt-field">
+        <span class="receipt-label">Scontrino (opzionale)</span>
+        <div id="receiptPreview" class="receipt-preview" hidden>
+          <img id="receiptPreviewImg" alt="Anteprima scontrino">
+          <button type="button" id="removeReceiptBtn" class="icon-btn" aria-label="Rimuovi scontrino">&#10005;</button>
+        </div>
+        <label class="receipt-upload-label" for="receiptInput">+ Aggiungi foto</label>
+        <input type="file" id="receiptInput" accept="image/*" capture="environment" hidden>
+      </div>
+
       <div class="modal-actions">
         <button type="button" id="deleteMovement" class="btn danger" hidden>Elimina</button>
+        <button type="button" id="duplicateMovement" class="btn secondary" hidden>Duplica</button>
         <button type="submit" class="btn primary">Salva</button>
       </div>
     </form>
@@ -265,6 +296,7 @@
 </div>
 
 <script src="assets/js/storage.js"></script>
+<script src="assets/js/photos.js"></script>
 <script src="assets/js/charts.js"></script>
 <script src="assets/js/app.js"></script>
 </body>

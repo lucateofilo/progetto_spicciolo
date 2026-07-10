@@ -10,6 +10,12 @@ let formType = "uscita";
 let recurringFormType = "uscita";
 let statsToggleType = "uscita";
 let searchQuery = "";
+let filterCategoryId = "";
+let pendingReceiptFile = null;
+let removeReceiptFlag = false;
+let editingMovementHasPhoto = false;
+
+const RECEIPT_BADGE_SVG = '<span class="receipt-badge" aria-label="Scontrino allegato"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></span>';
 
 function startOfDay(date) {
   const d = new Date(date);
@@ -131,6 +137,8 @@ function renderAll() {
 
   renderTotals(movements);
   renderAverage(movements);
+  renderBudgetWarnings(movements, categories);
+  renderCategoryFilterOptions(categories);
   renderMovementsList(movements, categories);
   renderStackedBar(movements);
   renderCategoryTotals(movements, categories, statsToggleType, periodType);
@@ -205,18 +213,18 @@ function renderMovementsList(movements, categories) {
   list.innerHTML = "";
 
   const query = searchQuery.trim().toLowerCase();
-  const filtered = query
-    ? movements.filter((m) => {
-        const category = categories.find((c) => c.id === m.categoryId);
-        const haystack = `${m.note || ""} ${category ? category.name : ""}`.toLowerCase();
-        return haystack.includes(query);
-      })
-    : movements;
+  const filtered = movements.filter((m) => {
+    if (filterCategoryId && m.categoryId !== filterCategoryId) return false;
+    if (!query) return true;
+    const category = categories.find((c) => c.id === m.categoryId);
+    const haystack = `${m.note || ""} ${category ? category.name : ""}`.toLowerCase();
+    return haystack.includes(query);
+  });
 
   const sorted = [...filtered].sort((a, b) => (a.date < b.date ? 1 : -1));
 
   if (sorted.length === 0) {
-    emptyState.innerHTML = query
+    emptyState.innerHTML = query || filterCategoryId
       ? "Nessun movimento trovato."
       : "Nessun movimento in questo periodo.<br>Tocca + per aggiungerne uno.";
     emptyState.hidden = false;
@@ -227,23 +235,62 @@ function renderMovementsList(movements, categories) {
   for (const m of sorted) {
     const category = categories.find((c) => c.id === m.categoryId);
     const li = document.createElement("li");
-    li.className = "movement-item";
+    li.className = "movement-item" + (m.incomplete ? " incomplete" : "");
     li.dataset.id = m.id;
     const dateLabel = new Date(m.date + "T12:00:00").toLocaleDateString("it-IT", { day: "numeric", month: "short" });
     li.innerHTML = `
       <span class="cat-dot" style="background:${category ? category.color : "#898781"}"></span>
       <div class="info">
-        <div class="cat-name">${category ? category.name : "Categoria eliminata"}</div>
+        <div class="cat-name">${m.incomplete ? "Da completare" : (category ? category.name : "Categoria eliminata")}${m.hasPhoto ? RECEIPT_BADGE_SVG : ""}</div>
         ${m.note ? `<div class="note">${m.note}</div>` : ""}
       </div>
       <div class="meta">
-        <span class="amount ${m.type}">${m.type === "entrata" ? "+" : "-"}${formatEuro(m.amount)}</span>
+        <span class="amount ${m.incomplete ? "" : m.type}">${m.incomplete ? "—" : (m.type === "entrata" ? "+" : "-") + formatEuro(m.amount)}</span>
         <span class="date">${dateLabel}</span>
       </div>
     `;
     li.addEventListener("click", () => openModal("edit", m));
     list.appendChild(li);
   }
+}
+
+function renderCategoryFilterOptions(categories) {
+  const select = document.getElementById("filterCategory");
+  const current = select.value;
+  select.innerHTML = '<option value="">Tutte le categorie</option>';
+  for (const c of categories) {
+    const opt = document.createElement("option");
+    opt.value = c.id;
+    opt.textContent = c.name;
+    select.appendChild(opt);
+  }
+  select.value = categories.some((c) => c.id === current) ? current : "";
+  filterCategoryId = select.value;
+}
+
+function getBudgetWarnings(movements, categories) {
+  if (periodType !== "month") return [];
+  const spent = new Map();
+  for (const m of movements) {
+    if (m.type !== "uscita" || m.incomplete) continue;
+    spent.set(m.categoryId, (spent.get(m.categoryId) || 0) + m.amount);
+  }
+  return categories
+    .filter((c) => c.budget && (spent.get(c.id) || 0) / c.budget >= 0.8)
+    .map((c) => ({ name: c.name, pct: Math.round(((spent.get(c.id) || 0) / c.budget) * 100) }));
+}
+
+function renderBudgetWarnings(movements, categories) {
+  const el = document.getElementById("budgetWarnings");
+  const warnings = getBudgetWarnings(movements, categories);
+  if (warnings.length === 0) {
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  el.innerHTML = warnings
+    .map((w) => `<span class="budget-warning-chip ${w.pct >= 100 ? "over" : ""}">${w.name} ${w.pct}%</span>`)
+    .join("");
 }
 
 function fillCategorySelect(select, selectedId, includeNewOption) {
@@ -296,14 +343,30 @@ function setRecurringFormType(type) {
   setTypeSwitch(document.getElementById("recurringForm"), type);
 }
 
+function showReceiptPreview(url) {
+  document.getElementById("receiptPreviewImg").src = url;
+  document.getElementById("receiptPreview").hidden = false;
+}
+
+function hideReceiptPreview() {
+  document.getElementById("receiptPreview").hidden = true;
+  document.getElementById("receiptPreviewImg").src = "";
+}
+
 function openModal(mode, movement) {
   const modal = document.getElementById("movementModal");
   const form = document.getElementById("movementForm");
   form.reset();
   document.getElementById("deleteMovement").hidden = mode !== "edit";
+  document.getElementById("duplicateMovement").hidden = mode !== "edit";
+
+  pendingReceiptFile = null;
+  removeReceiptFlag = false;
+  hideReceiptPreview();
 
   if (mode === "edit") {
     editingMovementId = movement.id;
+    editingMovementHasPhoto = movement.hasPhoto;
     document.getElementById("modalTitle").textContent = "Modifica movimento";
     document.getElementById("movementId").value = movement.id;
     document.getElementById("amount").value = movement.amount;
@@ -311,8 +374,14 @@ function openModal(mode, movement) {
     document.getElementById("note").value = movement.note || "";
     setFormType(movement.type);
     populateCategorySelect(movement.categoryId);
+    if (movement.hasPhoto) {
+      Photos.get(movement.id).then((blob) => {
+        if (blob) showReceiptPreview(URL.createObjectURL(blob));
+      });
+    }
   } else {
     editingMovementId = null;
+    editingMovementHasPhoto = false;
     document.getElementById("modalTitle").textContent = "Nuovo movimento";
     document.getElementById("date").value = toISODate(new Date());
     setFormType("uscita");
@@ -326,7 +395,7 @@ function closeModal() {
   document.getElementById("movementModal").hidden = true;
 }
 
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
   e.preventDefault();
   const amount = document.getElementById("amount").value;
   const date = document.getElementById("date").value;
@@ -343,10 +412,24 @@ function handleFormSubmit(e) {
     categoryId = Store.addCategory(name, color).id;
   }
 
+  const hasPhoto = pendingReceiptFile ? true : removeReceiptFlag ? false : editingMovementHasPhoto;
+
+  let movement;
   if (editingMovementId) {
-    Store.updateMovement(editingMovementId, { date, type: formType, amount, categoryId, note });
+    movement = Store.updateMovement(editingMovementId, { date, type: formType, amount, categoryId, note, incomplete: false, hasPhoto });
   } else {
-    Store.addMovement({ date, type: formType, amount, categoryId, note });
+    movement = Store.addMovement({ date, type: formType, amount, categoryId, note, incomplete: false, hasPhoto });
+  }
+
+  if (pendingReceiptFile) {
+    try {
+      await Photos.save(movement.id, pendingReceiptFile);
+    } catch {
+      Store.updateMovement(movement.id, { hasPhoto: false });
+      alert("Movimento salvato, ma il salvataggio della foto è fallito.");
+    }
+  } else if (removeReceiptFlag) {
+    Photos.delete(movement.id).catch(() => {});
   }
 
   closeModal();
@@ -355,7 +438,23 @@ function handleFormSubmit(e) {
 
 function handleDeleteMovement() {
   if (!editingMovementId) return;
+  Photos.delete(editingMovementId).catch(() => {});
   Store.deleteMovement(editingMovementId);
+  closeModal();
+  renderAll();
+}
+
+function handleDuplicateMovement() {
+  if (!editingMovementId) return;
+  const original = Store.getMovements().find((m) => m.id === editingMovementId);
+  if (!original) return;
+  Store.addMovement({
+    date: toISODate(new Date()),
+    type: original.type,
+    amount: original.amount,
+    categoryId: original.categoryId,
+    note: original.note,
+  });
   closeModal();
   renderAll();
 }
@@ -483,7 +582,7 @@ function exportMovementsCSV() {
   const categories = Store.getCategories();
   const rows = [["Data", "Tipo", "Categoria", "Importo", "Nota"]];
 
-  const sorted = [...Store.getMovements()].sort((a, b) => (a.date < b.date ? -1 : 1));
+  const sorted = [...Store.getMovements()].filter((m) => !m.incomplete).sort((a, b) => (a.date < b.date ? -1 : 1));
   for (const m of sorted) {
     const category = categories.find((c) => c.id === m.categoryId);
     rows.push([
@@ -505,6 +604,41 @@ function exportMovementsCSV() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+function exportBackup() {
+  const data = Store.exportAll();
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `spicciolo-backup-${toISODate(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importBackup(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    let data;
+    try {
+      data = JSON.parse(reader.result);
+    } catch {
+      alert("File di backup non valido.");
+      return;
+    }
+    if (!confirm("Sostituire tutti i dati attuali con quelli del backup? L'operazione non è reversibile.")) return;
+    if (!Store.importAll(data)) {
+      alert("File di backup non valido.");
+      return;
+    }
+    renderAll();
+    alert("Backup ripristinato.");
+  };
+  reader.readAsText(file);
 }
 
 function switchView(view) {
@@ -539,6 +673,11 @@ document.addEventListener("DOMContentLoaded", () => {
     renderMovementsList(getFilteredMovements(), Store.getCategories());
   });
 
+  document.getElementById("filterCategory").addEventListener("change", (e) => {
+    filterCategoryId = e.target.value;
+    renderMovementsList(getFilteredMovements(), Store.getCategories());
+  });
+
   document.getElementById("fab").addEventListener("click", () => openModal("add"));
   document.getElementById("closeModal").addEventListener("click", closeModal);
   document.getElementById("movementModal").addEventListener("click", (e) => {
@@ -553,6 +692,42 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("categorySelect").addEventListener("change", toggleNewCategoryFields);
   document.getElementById("movementForm").addEventListener("submit", handleFormSubmit);
   document.getElementById("deleteMovement").addEventListener("click", handleDeleteMovement);
+  document.getElementById("duplicateMovement").addEventListener("click", handleDuplicateMovement);
+
+  document.getElementById("receiptInput").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    pendingReceiptFile = file;
+    removeReceiptFlag = false;
+    showReceiptPreview(URL.createObjectURL(file));
+  });
+
+  document.getElementById("removeReceiptBtn").addEventListener("click", () => {
+    pendingReceiptFile = null;
+    removeReceiptFlag = true;
+    hideReceiptPreview();
+  });
+
+  document.getElementById("quickReceiptInput").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    const movement = Store.addMovement({
+      date: toISODate(new Date()),
+      type: "uscita",
+      amount: 0,
+      categoryId: null,
+      note: "",
+      incomplete: true,
+      hasPhoto: true,
+    });
+    try {
+      await Photos.save(movement.id, file);
+    } catch {
+      Store.updateMovement(movement.id, { hasPhoto: false });
+    }
+    renderAll();
+  });
 
   document.getElementById("addCategoryBtn").addEventListener("click", () => openCategoryModal("add"));
   document.getElementById("closeCategoryModal").addEventListener("click", closeCategoryModal);
@@ -575,6 +750,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("deleteRecurringBtn").addEventListener("click", handleDeleteRecurringModal);
 
   document.getElementById("exportCsvBtn").addEventListener("click", exportMovementsCSV);
+  document.getElementById("exportBackupBtn").addEventListener("click", exportBackup);
+  document.getElementById("importBackupInput").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (file) importBackup(file);
+  });
 
   document.getElementById("categoryManager").addEventListener("click", (e) => {
     const moveBtn = e.target.closest(".cat-move");

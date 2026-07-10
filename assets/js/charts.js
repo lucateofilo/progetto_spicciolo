@@ -69,7 +69,7 @@ function renderCategoryTotals(movements, categories, type, periodType) {
   const emptyState = document.getElementById("categoryEmptyState");
   list.innerHTML = "";
 
-  const filtered = movements.filter((m) => m.type === type);
+  const filtered = movements.filter((m) => m.type === type && !m.incomplete);
   const totalsByCategory = new Map();
   for (const m of filtered) {
     totalsByCategory.set(m.categoryId, (totalsByCategory.get(m.categoryId) || 0) + m.amount);

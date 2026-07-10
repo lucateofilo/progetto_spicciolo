@@ -1,10 +1,11 @@
-const CACHE_NAME = "spicciolo-v8";
+const CACHE_NAME = "spicciolo-v9";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.json",
   "./assets/css/style.css",
   "./assets/js/storage.js",
+  "./assets/js/photos.js",
   "./assets/js/charts.js",
   "./assets/js/app.js",
   "./assets/icons/icon-192.png",

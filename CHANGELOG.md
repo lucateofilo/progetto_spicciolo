@@ -3,6 +3,20 @@
 Tutte le modifiche significative al progetto sono documentate in questo file.
 Formato: `## YYYY-MM-DD — Tipo` seguito da sezioni Aggiunto / Modificato / Fix.
 
+## 2026-07-10 — Feature (scontrini, filtro categoria, avvisi budget, duplica, backup)
+
+### Aggiunto
+- **Foto scontrino sui movimenti**: nel modale movimento, campo opzionale "Aggiungi foto" (input nativo con `capture="environment"`, apre la fotocamera su mobile). Le foto sono salvate in **IndexedDB** (`assets/js/photos.js`, wrapper nativo senza librerie) tenute separate dal JSON in `localStorage` per non appesantire ogni lettura/scrittura dei dati con blob binari. Un'icona a graffetta compare accanto al movimento in Home quando ha uno scontrino allegato.
+- **Scontrino veloce**: nuovo FAB secondario (icona fotocamera) sopra il "+" principale — scatta/scegli una foto e crea subito un movimento **incompleto** (senza importo/categoria), evidenziato in Home con un bordo ambra e l'etichetta "Da completare". Basta toccarlo più tardi per finire di inserire i dati; salvando dal modale con tutti i campi richiesti l'etichetta sparisce. I movimenti incompleti non entrano nei totali per categoria (Statistiche) né nell'export CSV.
+- **Duplica movimento**: bottone "Duplica" nel modale di modifica — crea una copia del movimento con data odierna, utile per spese ricorrenti troppo irregolari da gestire come "ricorrente" vero.
+- **Filtro categoria in Home**: select accanto alla ricerca testuale per filtrare la lista movimenti per categoria. Il filtro per tipo (entrata/uscita) non è stato aggiunto: già leggibile a colpo d'occhio dal colore/segno di ogni riga, sarebbe stato ridondante.
+- **Avvisi budget**: quando il periodo è "Mese" e una categoria di uscita supera l'80% del proprio budget, in Home compare un chip di avviso (ambra sotto l'80-99%, rosso da 100% in su).
+- **Backup dati**: in Gestione, "Esporta backup" / "Ripristina backup" per salvare/ripristinare l'intero stato (categorie, movimenti, ricorrenti, budget) in un file JSON. Il ripristino **sostituisce** tutti i dati correnti (conferma richiesta) — a differenza dell'export CSV, non è un merge. Le foto degli scontrini (IndexedDB) non sono incluse nel backup.
+- Bump `CACHE_NAME` a `spicciolo-v9` in `sw.js`, aggiunto `assets/js/photos.js` all'app shell cacheata offline.
+
+### Modificato
+- Schema movimento esteso con `incomplete` e `hasPhoto` (booleani, default `false`): i dati esistenti restano validi, i campi mancanti vengono aggiunti in lettura senza migrazione distruttiva (stesso pattern già usato per `recurringId`/`budget`).
+
 ## 2026-07-10 — Feature (donut categorie)
 
 ### Aggiunto

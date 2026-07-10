@@ -15,6 +15,8 @@ function loadData() {
     }
     for (const m of data.movements) {
       if (m.recurringId === undefined) m.recurringId = null;
+      if (m.incomplete === undefined) m.incomplete = false;
+      if (m.hasPhoto === undefined) m.hasPhoto = false;
     }
     return data;
   } catch {
@@ -100,7 +102,7 @@ const Store = {
     return loadData().movements;
   },
 
-  addMovement({ date, type, amount, categoryId, note, recurringId = null }) {
+  addMovement({ date, type, amount, categoryId, note, recurringId = null, incomplete = false, hasPhoto = false }) {
     const data = loadData();
     const movement = {
       id: genId(),
@@ -110,6 +112,8 @@ const Store = {
       categoryId,
       note: note ? note.trim() : "",
       recurringId,
+      incomplete,
+      hasPhoto,
     };
     data.movements.push(movement);
     saveData(data);
@@ -209,5 +213,19 @@ const Store = {
 
     if (changed) saveData(data);
     return changed;
+  },
+
+  exportAll() {
+    return loadData();
+  },
+
+  importAll(data) {
+    if (!data || typeof data !== "object") return false;
+    saveData({
+      categories: Array.isArray(data.categories) ? data.categories : [],
+      movements: Array.isArray(data.movements) ? data.movements : [],
+      recurring: Array.isArray(data.recurring) ? data.recurring : [],
+    });
+    return true;
   },
 };
