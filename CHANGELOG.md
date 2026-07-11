@@ -3,6 +3,12 @@
 Tutte le modifiche significative al progetto sono documentate in questo file.
 Formato: `## YYYY-MM-DD — Tipo` seguito da sezioni Aggiunto / Modificato / Fix.
 
+## 2026-07-12 — Feature (tag sui movimenti, periodo personalizzato)
+
+### Aggiunto
+- **Tag multipli sui movimenti**: campo opzionale nel form movimento, tag separati da virgola (normalizzati minuscolo, deduplicati). Suggeriti via `<datalist>` nativa con i tag già usati, nessuna UI custom di autocomplete. Mostrati come chip sotto la nota nella lista movimenti; toccare un chip filtra subito la lista per quel tag riusando la ricerca testuale già esistente (che ora include anche i tag nell'haystack). Colonna "Tag" aggiunta all'export CSV; copiati anche da "Duplica movimento".
+- **Filtro periodo personalizzato**: nuova opzione "Personalizzato" nel select periodo, con due campi data (inizio/fine) al posto delle frecce avanti/indietro. "Andamento" e "Confronto con il periodo precedente" si nascondono per questo periodo (nessun "periodo precedente" o sequenza di periodi ha senso per un intervallo libero); media uscite calcolata sui giorni effettivi dell'intervallo.
+
 ## 2026-07-10 — Feature (scontrini, filtro categoria, avvisi budget, duplica, backup)
 
 ### Aggiunto

@@ -17,6 +17,7 @@ function loadData() {
       if (m.recurringId === undefined) m.recurringId = null;
       if (m.incomplete === undefined) m.incomplete = false;
       if (m.hasPhoto === undefined) m.hasPhoto = false;
+      if (!Array.isArray(m.tags)) m.tags = [];
     }
     return data;
   } catch {
@@ -37,6 +38,20 @@ function updateEntity(list, id, changes) {
   if (!item) return null;
   Object.assign(item, changes);
   return item;
+}
+
+function normalizeTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  const seen = new Set();
+  const result = [];
+  for (const raw of tags) {
+    const tag = String(raw).trim().toLowerCase();
+    if (tag && !seen.has(tag)) {
+      seen.add(tag);
+      result.push(tag);
+    }
+  }
+  return result;
 }
 
 function ymKey(date) {
@@ -102,7 +117,7 @@ const Store = {
     return loadData().movements;
   },
 
-  addMovement({ date, type, amount, categoryId, note, recurringId = null, incomplete = false, hasPhoto = false }) {
+  addMovement({ date, type, amount, categoryId, note, recurringId = null, incomplete = false, hasPhoto = false, tags = [] }) {
     const data = loadData();
     const movement = {
       id: genId(),
@@ -114,6 +129,7 @@ const Store = {
       recurringId,
       incomplete,
       hasPhoto,
+      tags: normalizeTags(tags),
     };
     data.movements.push(movement);
     saveData(data);
@@ -127,8 +143,19 @@ const Store = {
     if (changes.amount !== undefined) {
       movement.amount = Math.abs(Number(changes.amount));
     }
+    if (changes.tags !== undefined) {
+      movement.tags = normalizeTags(changes.tags);
+    }
     saveData(data);
     return movement;
+  },
+
+  getAllTags() {
+    const tags = new Set();
+    for (const m of loadData().movements) {
+      for (const t of m.tags || []) tags.add(t);
+    }
+    return [...tags].sort();
   },
 
   deleteMovement(id) {

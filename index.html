@@ -20,11 +20,17 @@
         <option value="week">Settimana</option>
         <option value="month" selected>Mese</option>
         <option value="year">Anno</option>
+        <option value="custom">Personalizzato</option>
       </select>
-      <div class="period-nav">
+      <div class="period-nav" id="periodNav">
         <button id="periodPrev" aria-label="Periodo precedente">&#8249;</button>
         <span id="periodLabel"></span>
         <button id="periodNext" aria-label="Periodo successivo">&#8250;</button>
+      </div>
+      <div class="period-custom-range" id="periodCustomRange" hidden>
+        <input type="date" id="customRangeStartInput" aria-label="Data inizio">
+        <span>–</span>
+        <input type="date" id="customRangeEndInput" aria-label="Data fine">
       </div>
     </div>
   </header>
@@ -60,12 +66,12 @@
     </section>
 
     <section id="view-stats" class="view">
-      <div class="chart-card">
+      <div class="chart-card" id="trendCard">
         <h2>Andamento</h2>
         <div id="trendChart" class="trend-chart"></div>
       </div>
 
-      <div class="chart-card">
+      <div class="chart-card" id="comparisonCard">
         <h2>Confronto con il periodo precedente</h2>
         <div id="periodComparison" class="comparison-list"></div>
       </div>
@@ -192,6 +198,12 @@
       <label>
         Nota (opzionale)
         <input type="text" id="note" maxlength="80" placeholder="Es. supermercato">
+      </label>
+
+      <label>
+        Tag (opzionali, separati da virgola)
+        <input type="text" id="movementTags" maxlength="120" placeholder="Es. viaggio, regalo" list="tagSuggestions">
+        <datalist id="tagSuggestions"></datalist>
       </label>
 
       <div class="receipt-field">

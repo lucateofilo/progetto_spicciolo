@@ -3,6 +3,8 @@ const MONTHS_IT_SHORT = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago",
 
 let periodType = "month";
 let periodAnchor = startOfDay(new Date());
+let customRangeStart = startOfDay(new Date(Date.now() - 29 * 86400000));
+let customRangeEnd = endOfDay(new Date());
 let editingMovementId = null;
 let editingCategoryId = null;
 let editingRecurringId = null;
@@ -55,6 +57,9 @@ function getPeriodBounds(type, anchor) {
     const end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
     return { start, end: endOfDay(end) };
   }
+  if (type === "custom") {
+    return { start: customRangeStart, end: customRangeEnd };
+  }
   // year
   const start = new Date(anchor.getFullYear(), 0, 1);
   const end = new Date(anchor.getFullYear(), 11, 31);
@@ -72,6 +77,10 @@ function getPeriodLabel(type, anchor) {
   }
   if (type === "month") {
     return `${MONTHS_IT[anchor.getMonth()]} ${anchor.getFullYear()}`;
+  }
+  if (type === "custom") {
+    const fmt = (d) => d.toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric" });
+    return `${fmt(customRangeStart)} – ${fmt(customRangeEnd)}`;
   }
   return `${anchor.getFullYear()}`;
 }
@@ -145,16 +154,28 @@ function renderAll() {
   renderCategoryManager(categories, Store.getMovements());
   renderRecurringList(Store.getRecurring(), categories);
 
-  const trendPeriods = getPastPeriods(periodType, periodAnchor, 6).map((p) => ({
-    label: p.label,
-    net: computeTotals(getMovementsInRange(p.start, p.end)).saldo,
-  }));
-  renderTrend(trendPeriods);
+  const trendCard = document.getElementById("trendCard");
+  const comparisonCard = document.getElementById("comparisonCard");
+  if (periodType === "custom") {
+    // Neither concept has a natural meaning for an arbitrary date range (no "previous" range,
+    // no fixed-length periods to look back over), so both cards just stay hidden.
+    trendCard.hidden = true;
+    comparisonCard.hidden = true;
+  } else {
+    trendCard.hidden = false;
+    comparisonCard.hidden = false;
 
-  const prevAnchor = shiftedAnchor(periodType, periodAnchor, -1);
-  const { start: prevStart, end: prevEnd } = getPeriodBounds(periodType, prevAnchor);
-  const previousTotals = computeTotals(getMovementsInRange(prevStart, prevEnd));
-  renderPeriodComparison(computeTotals(movements), previousTotals);
+    const trendPeriods = getPastPeriods(periodType, periodAnchor, 6).map((p) => ({
+      label: p.label,
+      net: computeTotals(getMovementsInRange(p.start, p.end)).saldo,
+    }));
+    renderTrend(trendPeriods);
+
+    const prevAnchor = shiftedAnchor(periodType, periodAnchor, -1);
+    const { start: prevStart, end: prevEnd } = getPeriodBounds(periodType, prevAnchor);
+    const previousTotals = computeTotals(getMovementsInRange(prevStart, prevEnd));
+    renderPeriodComparison(computeTotals(movements), previousTotals);
+  }
 }
 
 function handleDeleteCategory(categoryId) {
@@ -198,6 +219,9 @@ function renderAverage(movements) {
   } else if (periodType === "month") {
     const { start, end } = getPeriodBounds(periodType, periodAnchor);
     divisor = Math.round((end - start) / 86400000) + 1;
+  } else if (periodType === "custom") {
+    const { start, end } = getPeriodBounds(periodType, periodAnchor);
+    divisor = Math.max(1, Math.round((end - start) / 86400000) + 1);
   } else {
     divisor = 12;
     unit = "mese";
@@ -217,7 +241,7 @@ function renderMovementsList(movements, categories) {
     if (filterCategoryId && m.categoryId !== filterCategoryId) return false;
     if (!query) return true;
     const category = categories.find((c) => c.id === m.categoryId);
-    const haystack = `${m.note || ""} ${category ? category.name : ""}`.toLowerCase();
+    const haystack = `${m.note || ""} ${category ? category.name : ""} ${(m.tags || []).join(" ")}`.toLowerCase();
     return haystack.includes(query);
   });
 
@@ -243,13 +267,24 @@ function renderMovementsList(movements, categories) {
       <div class="info">
         <div class="cat-name">${m.incomplete ? "Da completare" : (category ? category.name : "Categoria eliminata")}${m.hasPhoto ? RECEIPT_BADGE_SVG : ""}</div>
         ${m.note ? `<div class="note">${m.note}</div>` : ""}
+        ${m.tags && m.tags.length > 0 ? `<div class="tag-chips">${m.tags.map((t) => `<span class="tag-chip" data-tag="${t}">#${t}</span>`).join("")}</div>` : ""}
       </div>
       <div class="meta">
         <span class="amount ${m.incomplete ? "" : m.type}">${m.incomplete ? "—" : (m.type === "entrata" ? "+" : "-") + formatEuro(m.amount)}</span>
         <span class="date">${dateLabel}</span>
       </div>
     `;
-    li.addEventListener("click", () => openModal("edit", m));
+    li.addEventListener("click", (e) => {
+      const chip = e.target.closest(".tag-chip");
+      if (chip) {
+        e.stopPropagation();
+        searchQuery = chip.dataset.tag;
+        document.getElementById("searchMovements").value = searchQuery;
+        renderMovementsList(getFilteredMovements(), Store.getCategories());
+        return;
+      }
+      openModal("edit", m);
+    });
     list.appendChild(li);
   }
 }
@@ -327,6 +362,15 @@ function toggleNewCategoryFields() {
   document.getElementById("newCategoryFields").hidden = select.value !== "__new__";
 }
 
+function populateTagSuggestions() {
+  const datalist = document.getElementById("tagSuggestions");
+  datalist.innerHTML = Store.getAllTags().map((t) => `<option value="${t}"></option>`).join("");
+}
+
+function parseTagsInput(value) {
+  return value.split(",").map((t) => t.trim()).filter(Boolean);
+}
+
 function setTypeSwitch(container, type) {
   container.querySelectorAll(".type-btn").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.type === type);
@@ -363,6 +407,7 @@ function openModal(mode, movement) {
   pendingReceiptFile = null;
   removeReceiptFlag = false;
   hideReceiptPreview();
+  populateTagSuggestions();
 
   if (mode === "edit") {
     editingMovementId = movement.id;
@@ -372,6 +417,7 @@ function openModal(mode, movement) {
     document.getElementById("amount").value = movement.amount;
     document.getElementById("date").value = movement.date;
     document.getElementById("note").value = movement.note || "";
+    document.getElementById("movementTags").value = (movement.tags || []).join(", ");
     setFormType(movement.type);
     populateCategorySelect(movement.categoryId);
     if (movement.hasPhoto) {
@@ -400,6 +446,7 @@ async function handleFormSubmit(e) {
   const amount = document.getElementById("amount").value;
   const date = document.getElementById("date").value;
   const note = document.getElementById("note").value;
+  const tags = parseTagsInput(document.getElementById("movementTags").value);
   let categoryId = document.getElementById("categorySelect").value;
 
   if (categoryId === "__new__") {
@@ -416,9 +463,9 @@ async function handleFormSubmit(e) {
 
   let movement;
   if (editingMovementId) {
-    movement = Store.updateMovement(editingMovementId, { date, type: formType, amount, categoryId, note, incomplete: false, hasPhoto });
+    movement = Store.updateMovement(editingMovementId, { date, type: formType, amount, categoryId, note, incomplete: false, hasPhoto, tags });
   } else {
-    movement = Store.addMovement({ date, type: formType, amount, categoryId, note, incomplete: false, hasPhoto });
+    movement = Store.addMovement({ date, type: formType, amount, categoryId, note, incomplete: false, hasPhoto, tags });
   }
 
   if (pendingReceiptFile) {
@@ -454,6 +501,7 @@ function handleDuplicateMovement() {
     amount: original.amount,
     categoryId: original.categoryId,
     note: original.note,
+    tags: original.tags,
   });
   closeModal();
   renderAll();
@@ -580,7 +628,7 @@ function csvEscape(value) {
 
 function exportMovementsCSV() {
   const categories = Store.getCategories();
-  const rows = [["Data", "Tipo", "Categoria", "Importo", "Nota"]];
+  const rows = [["Data", "Tipo", "Categoria", "Importo", "Nota", "Tag"]];
 
   const sorted = [...Store.getMovements()].filter((m) => !m.incomplete).sort((a, b) => (a.date < b.date ? -1 : 1));
   for (const m of sorted) {
@@ -591,6 +639,7 @@ function exportMovementsCSV() {
       category ? category.name : "Categoria eliminata",
       m.amount.toFixed(2),
       m.note || "",
+      (m.tags || []).join("; "),
     ]);
   }
 
@@ -659,10 +708,37 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("periodType").addEventListener("change", (e) => {
     periodType = e.target.value;
     periodAnchor = startOfDay(new Date());
+
+    const isCustom = periodType === "custom";
+    document.getElementById("periodNav").hidden = isCustom;
+    document.getElementById("periodCustomRange").hidden = !isCustom;
+    if (isCustom) {
+      document.getElementById("customRangeStartInput").value = toISODate(customRangeStart);
+      document.getElementById("customRangeEndInput").value = toISODate(customRangeEnd);
+    }
     renderAll();
   });
   document.getElementById("periodPrev").addEventListener("click", () => shiftPeriod(-1));
   document.getElementById("periodNext").addEventListener("click", () => shiftPeriod(1));
+
+  document.getElementById("customRangeStartInput").addEventListener("change", (e) => {
+    if (!e.target.value) return;
+    customRangeStart = startOfDay(new Date(e.target.value + "T12:00:00"));
+    if (customRangeStart > customRangeEnd) {
+      customRangeEnd = endOfDay(customRangeStart);
+      document.getElementById("customRangeEndInput").value = toISODate(customRangeEnd);
+    }
+    renderAll();
+  });
+  document.getElementById("customRangeEndInput").addEventListener("change", (e) => {
+    if (!e.target.value) return;
+    customRangeEnd = endOfDay(new Date(e.target.value + "T12:00:00"));
+    if (customRangeEnd < customRangeStart) {
+      customRangeStart = startOfDay(customRangeEnd);
+      document.getElementById("customRangeStartInput").value = toISODate(customRangeStart);
+    }
+    renderAll();
+  });
 
   document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.addEventListener("click", () => switchView(btn.dataset.view));
