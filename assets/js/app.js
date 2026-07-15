@@ -151,6 +151,7 @@ function renderAll() {
   renderMovementsList(movements, categories);
   renderStackedBar(movements);
   renderCategoryTotals(movements, categories, statsToggleType, periodType);
+  renderTagTotals(movements, statsToggleType);
   renderCategoryManager(categories, Store.getMovements());
   renderRecurringList(Store.getRecurring(), categories);
 
@@ -362,11 +363,6 @@ function toggleNewCategoryFields() {
   document.getElementById("newCategoryFields").hidden = select.value !== "__new__";
 }
 
-function populateTagSuggestions() {
-  const datalist = document.getElementById("tagSuggestions");
-  datalist.innerHTML = Store.getAllTags().map((t) => `<option value="${t}"></option>`).join("");
-}
-
 function parseTagsInput(value) {
   return value.split(",").map((t) => t.trim()).filter(Boolean);
 }
@@ -407,7 +403,6 @@ function openModal(mode, movement) {
   pendingReceiptFile = null;
   removeReceiptFlag = false;
   hideReceiptPreview();
-  populateTagSuggestions();
 
   if (mode === "edit") {
     editingMovementId = movement.id;
@@ -824,6 +819,38 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   document.getElementById("recurringForm").addEventListener("submit", handleRecurringFormSubmit);
   document.getElementById("deleteRecurringBtn").addEventListener("click", handleDeleteRecurringModal);
+
+  const tagsInput = document.getElementById("movementTags");
+  const tagDropdown = document.getElementById("tagDropdown");
+
+  tagsInput.addEventListener("input", () => {
+    const val = tagsInput.value;
+    const lastComma = val.lastIndexOf(",");
+    const partial = val.slice(lastComma + 1).trim().toLowerCase();
+    if (!partial) { tagDropdown.hidden = true; return; }
+    const all = Store.getAllTags();
+    const already = val.slice(0, lastComma + 1).split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
+    const matches = all.filter((t) => t.startsWith(partial) && !already.includes(t));
+    if (!matches.length) { tagDropdown.hidden = true; return; }
+    tagDropdown.innerHTML = matches
+      .map((t) => `<div class="tag-dropdown-item" data-tag="${t}">#${t}</div>`)
+      .join("");
+    tagDropdown.hidden = false;
+  });
+
+  tagDropdown.addEventListener("mousedown", (e) => {
+    const item = e.target.closest(".tag-dropdown-item");
+    if (!item) return;
+    e.preventDefault();
+    const val = tagsInput.value;
+    const lastComma = val.lastIndexOf(",");
+    const prefix = lastComma >= 0 ? val.slice(0, lastComma + 1) + " " : "";
+    tagsInput.value = prefix + item.dataset.tag + ", ";
+    tagDropdown.hidden = true;
+    tagsInput.focus();
+  });
+
+  tagsInput.addEventListener("blur", () => { tagDropdown.hidden = true; });
 
   document.getElementById("exportCsvBtn").addEventListener("click", exportMovementsCSV);
   document.getElementById("exportBackupBtn").addEventListener("click", exportBackup);

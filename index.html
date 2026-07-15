@@ -94,6 +94,12 @@
         <ul id="categoryTotals" class="category-totals"></ul>
         <p id="categoryEmptyState" class="empty-state" hidden>Nessuna categoria in questo periodo.</p>
       </div>
+
+      <div class="chart-card" id="tagTotalsCard">
+        <h2>Totale per tag</h2>
+        <ul id="tagTotals" class="category-totals"></ul>
+        <p id="tagEmptyState" class="empty-state" hidden>Nessun tag in questo periodo.</p>
+      </div>
     </section>
 
     <section id="view-manage" class="view">
@@ -202,8 +208,10 @@
 
       <label>
         Tag (opzionali, separati da virgola)
-        <input type="text" id="movementTags" maxlength="120" placeholder="Es. viaggio, regalo" list="tagSuggestions">
-        <datalist id="tagSuggestions"></datalist>
+        <div class="tag-input-wrapper">
+          <input type="text" id="movementTags" maxlength="120" placeholder="Es. viaggio, regalo" autocomplete="off">
+          <div id="tagDropdown" class="tag-dropdown" hidden></div>
+        </div>
       </label>
 
       <div class="receipt-field">

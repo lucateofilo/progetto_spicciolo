@@ -3,6 +3,15 @@
 Tutte le modifiche significative al progetto sono documentate in questo file.
 Formato: `## YYYY-MM-DD — Tipo` seguito da sezioni Aggiunto / Modificato / Fix.
 
+## 2026-07-15 — Feature (autocomplete tag, statistiche per tag)
+
+### Aggiunto
+- **Autocomplete tag intelligente**: il campo tag nel form movimento ora mostra un dropdown custom mentre si digita, suggerendo i tag già usati in base al prefisso dell'ultimo tag corrente (dopo l'ultima virgola). Sostituisce il `<datalist>` nativo che non funzionava con input comma-separated. Selezionando un suggerimento il tag viene inserito e il cursore si posiziona già pronto per il tag successivo.
+- **Resoconto per tag nelle statistiche**: nella vista Statistiche, nuova sezione "Totale per tag" che mostra l'importo aggregato per ciascun tag nei movimenti del periodo selezionato, filtrata dallo stesso toggle Uscite/Entrate delle categorie. I tag sono ordinati per importo decrescente con barra proporzionale.
+
+### Modificato
+- Rimosso `<datalist id="tagSuggestions">` sostituito dal dropdown custom sopra descritto.
+
 ## 2026-07-12 — Feature (tag sui movimenti, periodo personalizzato)
 
 ### Aggiunto

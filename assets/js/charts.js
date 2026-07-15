@@ -233,6 +233,47 @@ function renderTrend(periods) {
   }
 }
 
+function renderTagTotals(movements, type) {
+  const list = document.getElementById("tagTotals");
+  const emptyState = document.getElementById("tagEmptyState");
+  list.innerHTML = "";
+
+  const filtered = movements.filter((m) => m.type === type && !m.incomplete);
+  const totalsByTag = new Map();
+  for (const m of filtered) {
+    for (const tag of m.tags || []) {
+      totalsByTag.set(tag, (totalsByTag.get(tag) || 0) + m.amount);
+    }
+  }
+
+  if (totalsByTag.size === 0) {
+    emptyState.hidden = false;
+    return;
+  }
+  emptyState.hidden = true;
+
+  const rows = [...totalsByTag.entries()]
+    .map(([tag, amount]) => ({ tag, amount }))
+    .sort((a, b) => b.amount - a.amount);
+
+  const max = rows[0].amount;
+
+  for (const row of rows) {
+    const pct = max > 0 ? (row.amount / max) * 100 : 0;
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <div class="cat-row-top">
+        <span class="cat-name">#${row.tag}</span>
+        <span class="cat-amount">${formatEuro(row.amount)}</span>
+      </div>
+      <div class="cat-bar-track">
+        <div class="cat-bar-fill" style="width:${pct}%; background:var(--accent)"></div>
+      </div>
+    `;
+    list.appendChild(li);
+  }
+}
+
 function renderPeriodComparison(current, previous) {
   const container = document.getElementById("periodComparison");
   container.innerHTML = "";
